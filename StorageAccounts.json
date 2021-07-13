@@ -1,0 +1,60 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ebaccountAType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Standard_ZRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Premium_LRS"
+            ]
+        },
+        "ebaccountBType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Standard_ZRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Premium_LRS"
+            ]
+        }
+    },
+    "resources": [
+        {
+            "name": "[variables('ebaccountAName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [],
+            "tags": {
+                "displayName": "ebaccountA"
+            },
+            "properties": {
+                "accountType": "[parameters('ebaccountAType')]"
+            }
+        },
+        {
+            "name": "[variables('ebaccountBName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [],
+            "tags": {
+                "displayName": "ebaccountB"
+            },
+            "properties": {
+                "accountType": "[parameters('ebaccountBType')]"
+            }
+        }
+    ],
+    "variables": {
+        "ebaccountAName": "[concat('ebaccountA', uniqueString(resourceGroup().id))]",
+        "ebaccountBName": "[concat('ebaccountB', uniqueString(resourceGroup().id))]"
+    }
+}
