@@ -1,0 +1,196 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ebaccountAType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Standard_ZRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Premium_LRS"
+            ]
+        },
+        "ebaccountBType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Standard_ZRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Premium_LRS"
+            ]
+        },
+        "ebvm001Name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "ebvm001AdminUserName": {
+            "type": "string",
+            "minLength": 1
+        },
+        "ebvm001AdminPassword": {
+            "type": "securestring"
+        },
+        "ebvm001WindowsOSVersion": {
+            "type": "string",
+            "defaultValue": "2012-R2-Datacenter",
+            "allowedValues": [
+                "2008-R2-SP1",
+                "2012-Datacenter",
+                "2012-R2-Datacenter",
+                "Windows-Server-Technical-Preview"
+            ]
+        }
+    },
+    "resources": [
+        {
+            "name": "[variables('ebaccountAName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [],
+            "tags": {
+                "displayName": "ebaccountA"
+            },
+            "properties": {
+                "accountType": "[parameters('ebaccountAType')]"
+            }
+        },
+        {
+            "name": "[variables('ebaccountBName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [],
+            "tags": {
+                "displayName": "ebaccountB"
+            },
+            "properties": {
+                "accountType": "[parameters('ebaccountBType')]"
+            }
+        },
+        {
+            "name": "ebVnet001",
+            "type": "Microsoft.Network/virtualNetworks",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [],
+            "tags": {
+                "displayName": "ebVnet001"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('ebVnet001Prefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('ebVnet001Subnet1Name')]",
+                        "properties": {
+                            "addressPrefix": "[variables('ebVnet001Subnet1Prefix')]"
+                        }
+                    },
+                    {
+                        "name": "[variables('ebVnet001Subnet2Name')]",
+                        "properties": {
+                            "addressPrefix": "[variables('ebVnet001Subnet2Prefix')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[variables('ebvm001NicName')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', 'ebVnet001')]"
+            ],
+            "tags": {
+                "displayName": "ebvm001Nic"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[variables('ebvm001SubnetRef')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('ebvm001Name')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('ebaccountAName'))]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('ebvm001NicName'))]"
+            ],
+            "tags": {
+                "displayName": "ebvm001"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('ebvm001VmSize')]"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('ebvm001Name')]",
+                    "adminUsername": "[parameters('ebvm001AdminUsername')]",
+                    "adminPassword": "[parameters('ebvm001AdminPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('ebvm001ImagePublisher')]",
+                        "offer": "[variables('ebvm001ImageOffer')]",
+                        "sku": "[parameters('ebvm001WindowsOSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "ebvm001OSDisk",
+                        "vhd": {
+                            "uri": "[concat('http://', variables('ebaccountAName'), '.blob.core.windows.net/', variables('ebvm001StorageAccountContainerName'), '/', variables('ebvm001OSDiskName'), '.vhd')]"
+                        },
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('ebvm001NicName'))]"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "variables": {
+        "ebaccountAName": "[concat('ebaccountA', uniqueString(resourceGroup().id))]",
+        "ebaccountBName": "[concat('ebaccountB', uniqueString(resourceGroup().id))]",
+        "ebVnet001Prefix": "10.0.0.0/16",
+        "ebVnet001Subnet1Name": "Subnet-1",
+        "ebVnet001Subnet1Prefix": "10.0.0.0/24",
+        "ebVnet001Subnet2Name": "Subnet-2",
+        "ebVnet001Subnet2Prefix": "10.0.1.0/24",
+        "ebvm001ImagePublisher": "MicrosoftWindowsServer",
+        "ebvm001ImageOffer": "WindowsServer",
+        "ebvm001OSDiskName": "ebvm001OSDisk",
+        "ebvm001VmSize": "Standard_D1",
+        "ebvm001VnetID": "[resourceId('Microsoft.Network/virtualNetworks', 'ebVnet001')]",
+        "ebvm001SubnetRef": "[concat(variables('ebvm001VnetID'), '/subnets/', variables('ebVnet001Subnet1Name'))]",
+        "ebvm001StorageAccountContainerName": "vhds",
+        "ebvm001NicName": "[concat(parameters('ebvm001Name'), 'NetworkInterface')]"
+    }
+}
