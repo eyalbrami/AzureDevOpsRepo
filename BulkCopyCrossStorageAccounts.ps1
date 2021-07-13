@@ -13,7 +13,7 @@ $ContainerAName = "ebacontainer"
 #4. Upload Blobs to the storage container
 
 #Clean the storage Account Container
-Get-AzureStorageContainer -Name $ContainerAName -Context $AccountCtx | Remove-AzureStorageBlob
+Get-AzureStorageBlob -Name $ContainerAName -Context $AccountCtx | Remove-AzureStorageBlob
 
 # Upload file from D:\PERSONNEL\Eyal Photos USA 1\20190715_184013.jpg
 $fileUpload = "C:\20190715_184013.jpg"
