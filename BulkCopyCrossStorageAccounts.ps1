@@ -32,17 +32,20 @@ for($counter =1; $counter -le 99; $counter++){
 
 #6. Bulk Copy the 100 blobs from Storage Account A to B
     #Create container for storage account B
+
+    $StorageAccountB = Get-AzureRmStorageAccount -Name ebaccountBq7s7yylrkpriu -ResourceGroupName AZ_EyalB001_RG 
+    $BccountCtx = $StorageAccountB.Context
     $ContainerBName = "ebbcontainer"
-    #New-AzureStorageContainer -Name $ContainerBName -Context $AccountCtx -Permission Blob
+    New-AzureStorageContainer -Name $ContainerBName -Context $BccountCtx -Permission Blob
 
     #tests upload to container B
-    $fileUpload = "D:\PERSONNEL\Eyal Photos USA 1\20190715_184013.jpg"
-    Set-AzureStorageBlobContent -File $fileUpload -Container $ContainerBName -Blob "test" -Context $AccountCtx
+    #$fileUpload = "D:\PERSONNEL\Eyal Photos USA 1\20190715_184013.jpg"
+   # Set-AzureStorageBlobContent -File $fileUpload -Container $ContainerBName -Blob "test" -Context $AccountCtx
 
 
 
     #Bulk Copy
-    Get-AzureStorageBlob -Container $ContainerAName -Context $AccountCtx | Start-AzureStorageBlobCopy -DestContainer $ContainerBName
+    Get-AzureStorageBlob -Container $ContainerAName -Context $AccountCtx | Start-AzureStorageBlobCopy -DestContainer $ContainerBName -DestContext $BccountCtx
 
 
 
